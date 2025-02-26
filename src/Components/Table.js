@@ -1,10 +1,30 @@
 import React, { useEffect, useState } from 'react';
-import './Table.css'; // Importing the CSS file for styling
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    TablePagination,
+    Paper,
+    Link
+} from "@mui/material"
+import { tableCellClasses } from '@mui/material/TableCell';
+import { styled } from '@mui/material/styles';
 
-const Table = () => {
+const PresupuestosTable = () => {
     const [currentData, setCurrentData] = useState(null);
     const [file, setFile] = useState(null);
     const [historial, setHistorial] = useState([])
+    const [name, setName] = useState("")
+
+    const [page, setPage] = useState(0);
+    const rowsPerPage = 4;
+
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -20,6 +40,7 @@ const Table = () => {
                 });
                 const result = await response.json();
                 console.log(result);
+                setName(result.name)
                 setCurrentData(result.hijos); // Initialize currentData with fetched data
                 console.log(result);
             } catch (error) {
@@ -34,16 +55,38 @@ const Table = () => {
         if (hijos) {
             historial.push(currentData)
             setHistorial(historial)
+            setPage(0);
             setCurrentData(Array.isArray(hijos) ? hijos : []); // Update currentData to show hijos
         }
     };
 
     const goBack = () => {
         const back = historial[historial.length - 1];
+        setPage(0);
         setCurrentData(Array.isArray(back) ? back : []);
         historial.pop()
         setHistorial(historial)
     }
+
+    const StyledTableCell = styled(TableCell)(({ theme }) => ({
+        [`&.${tableCellClasses.head}`]: {
+          backgroundColor: "#666666",
+          color: theme.palette.common.white,
+        },
+        [`&.${tableCellClasses.body}`]: {
+          fontSize: 14,
+        },
+      }));
+
+      const StyledTableRow = styled(TableRow)(({ theme }) => ({
+        '&:nth-of-type(odd)': {
+          backgroundColor: theme.palette.action.hover,
+        },
+        // hide last border
+        '&:last-child td, &:last-child th': {
+          border: 0,
+        },
+      }));
 
     return (
         <div>
@@ -56,36 +99,53 @@ const Table = () => {
             <button onClick={() => goBack()}>Go Back</button>
         }
         {currentData != null &&
-            <table>
-                <thead>
-                    <tr>
-                        <th>Id</th>
-                        <th>Date</th>
-                        <th>Name</th>
-                        <th>Quantity</th>
-                        <th>Options</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {currentData.map(item => (
-                        <tr key={item.id}>
-                            <td>{item.id}</td>
-                            <td>{item.fecha ? item.fecha.toString() : 'N/A'}</td>
-                            <td>{item.name}</td>
-                            <td>{item.quantity}</td>
-                            <td>
-                                {item.hijos ? (
-                                    <button onClick={() => handleHijosClick(item.hijos)}>View Children</button>
-                                ) : (
-                                    'N/A'
-                                )}
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>}
+            <Paper sx={{ width:"100%", overflow: "hidden", padding: 2 }}>
+                <h2 style={{ textAlign: "left" }}>{name}</h2>
+                <TableContainer>
+                    <Table>
+                        <TableHead>
+                            {/* Cabecera de la tabla */}
+                            <TableRow>
+                                <StyledTableCell>Id</StyledTableCell>
+                                <StyledTableCell>Name</StyledTableCell>
+                                <StyledTableCell>Date</StyledTableCell>
+                                <StyledTableCell>Quantity</StyledTableCell>
+                                <StyledTableCell>Options</StyledTableCell>
+                            </TableRow>
+                        </TableHead>
+
+                        {/*Datos, cuerpo de la tabla*/}
+                        <TableBody>
+                            {currentData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item) => (
+                                <StyledTableRow key={item.id}>
+                                    <StyledTableCell>{item.id}</StyledTableCell>
+                                    <StyledTableCell>{item.name}</StyledTableCell>
+                                    <StyledTableCell>{item.fecha ? item.fecha.toString() : 'N/A'}</StyledTableCell>
+                                    <StyledTableCell>{item.quantity}</StyledTableCell>
+                                    <StyledTableCell>
+                                        {item.hijos ? (
+                                            <Link onClick={() => handleHijosClick(item.hijos)}>View Children</Link>
+                                        ) : ('N/A')}
+                                    </StyledTableCell>
+                                </StyledTableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+
+                {/*Control de Página*/}
+                <TablePagination
+                component="div"
+                count={currentData.length}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPageOptions={[]}
+                />
+            </Paper>    
+        }
         </div>
     );
 };
 
-export default Table;
+export default PresupuestosTable;
